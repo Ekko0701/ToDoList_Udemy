@@ -7,12 +7,15 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
+import SwiftUI
 
 class TodoListViewController: SwipeViewController {
 
     var todoItems: Results<Item>?
     let realm = try! Realm()
     
+    @IBOutlet weak var searchBar: UISearchBar!
     var selectedCategory: Category? {
         didSet {
             loadItems()
@@ -24,9 +27,31 @@ class TodoListViewController: SwipeViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        tableView.separatorStyle = .none
         
-        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
-        
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        if let colourHex =
+            selectedCategory?.colour {
+            
+            title = selectedCategory!.name
+            
+            guard let navBar = navigationController?.navigationBar else { fatalError("Navigation Controller does not exist.")}
+            
+            if let navBarColour = UIColor(hexString: colourHex) {
+                navBar.barTintColor = navBarColour
+                navBar.backgroundColor = navBarColour
+                
+                navBar.tintColor = ContrastColorOf(navBarColour, returnFlat: true)
+                
+                navBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor : ContrastColorOf(navBarColour, returnFlat: true)]
+                
+                searchBar.barTintColor = navBarColour
+            }
+            
+            
+        }
     }
 
     //MARK: TableView DataSource Method
@@ -41,6 +66,14 @@ class TodoListViewController: SwipeViewController {
         
         if let item = todoItems?[indexPath.row]  {
             cell.textLabel?.text = item.title
+            
+            if let colour = UIColor(hexString: selectedCategory!.colour)?.darken(byPercentage: CGFloat(indexPath.row) / CGFloat( todoItems!.count)) {
+                cell.backgroundColor = colour
+                cell.textLabel?.textColor = ContrastColorOf(colour, returnFlat: true)
+            }
+            
+            
+            
             
             // ternary operator ==>
             // value = condition ? valueIfTrue: valueIfFalse
